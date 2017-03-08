@@ -146,20 +146,7 @@ module.exports = function ElmWebpackLoader() {
     const dependencies = elmCompiler.findAllDependencies(input)
       .then(deps => {
         // add each dependency to the tree
-        deps.map(addDependencies);
-
-        return {
-          kind: 'success',
-          result: true
-        };
-      })
-      .catch(v => {
-        emitError(v);
-
-        return {
-          kind: 'error',
-          error: v
-        };
+        deps.forEach(addDependencies);
       });
 
     promises.push(dependencies);
@@ -190,38 +177,22 @@ module.exports = function ElmWebpackLoader() {
       console.log('Started compiling Elm..');
     }
 
-    const compilation = elmCompiler.compileToString(input, options)
-      .then(v => {
-        runningInstances -= 1;
-
-        return {
-          kind: 'success',
-          result: v
-        };
-      })
-      .catch(v => {
-        runningInstances -= 1;
-
-        return {
-          kind: 'error',
-          error: v
-        };
-      });
-
-    promises.push(compilation);
+    promises.push(
+      elmCompiler.compileToString(input, options)
+    );
 
     Promise.all(promises)
       .then(results => {
         const output = results[ results.length - 1 ]; // compilation output is always last
 
-        if (output.kind === 'success') {
-          alreadyCompiledFiles.push(input);
-          callback(null, output.result);
-        } else {
-          output.error.message = `Compiler process exited with error ${output.error.message}`;
-          callback(output.error);
-        }
+        alreadyCompiledFiles.push(input);
+        runningInstances -= 1;
+        callback(null, output);
       })
-      .catch(callback);
+      .catch(err => {
+        runningInstances -= 1;
+        emitError(err);
+        callback(err);
+      });
   }, RUNNING_INSTANCE_INTERVAL);
 };
