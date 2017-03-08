@@ -177,20 +177,28 @@ module.exports = function ElmWebpackLoader() {
       console.log('Started compiling Elm..');
     }
 
-    promises.push(
-      elmCompiler.compileToString(input, options)
-    );
+    const compilation = elmCompiler.compileToString(input, options)
+      .then(v => {
+        runningInstances -= 1;
+
+        return v;
+      })
+      .catch(v => {
+        runningInstances -= 1;
+
+        return Promise.reject(v);
+      });
+
+    promises.push(compilation);
 
     Promise.all(promises)
       .then(results => {
         const output = results[ results.length - 1 ]; // compilation output is always last
 
         alreadyCompiledFiles.push(input);
-        runningInstances -= 1;
         callback(null, output);
       })
       .catch(err => {
-        runningInstances -= 1;
         emitError(err);
         callback(err);
       });
