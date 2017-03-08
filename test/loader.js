@@ -175,7 +175,7 @@ describe('async mode', function passContextFunc() {
     loader.call(context, goodSource);
   });
 
-  xit('emits errors for incorrect source files', done => {
+  it('emits errors for incorrect source files', done => {
     const options = {
       cwd: fixturesDir
     };
